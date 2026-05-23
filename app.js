@@ -561,6 +561,19 @@ function addTransaction(event) {
 }
 
 function deleteTransaction(id) {
+  const entry = state.entries.find((item) => item.id === id);
+
+  if (!entry) {
+    return;
+  }
+
+  const label = entry.kind === "asset" ? "asset" : entry.kind === "expense" ? "expense" : "income";
+  const confirmed = confirm(`Remove this ${label}?\n\n${entry.source} - ${formatMoney(entry.amount)}`);
+
+  if (!confirmed) {
+    return;
+  }
+
   state.entries = state.entries.filter((entry) => entry.id !== id);
   save();
   render();
