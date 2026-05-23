@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Money Desk</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%230f766e'/%3E%3Cpath d='M19 42h26v6H19zM20 17h24v6H20zM20 29h18v6H20z' fill='%23fffdf7'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Personal money</p>
+          <h1>Money Desk</h1>
+        </div>
+        <div class="top-actions" aria-label="App controls">
+          <label class="currency-control">
+            <span>Currency</span>
+            <select id="currency">
+              <option value="INR">INR</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+              <option value="CAD">CAD</option>
+              <option value="AUD">AUD</option>
+            </select>
+          </label>
+          <button class="ghost-button" id="syncNow" type="button">Sync</button>
+          <button class="ghost-button" id="exportCsv" type="button">Export CSV</button>
+        </div>
+      </header>
+
+      <section class="auth-panel" aria-label="Cloud sync">
+        <div>
+          <h2>Cloud sync</h2>
+          <p id="syncStatus" class="panel-note">Local mode. Add Firebase settings to enable login and sync.</p>
+        </div>
+        <form class="auth-form" id="authForm" autocomplete="on">
+          <label>
+            <span>Email</span>
+            <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" />
+          </label>
+          <label>
+            <span>Password</span>
+            <input id="password" name="password" type="password" placeholder="Minimum 6 characters" autocomplete="current-password" />
+          </label>
+          <div class="auth-actions">
+            <button class="primary-button small-button" id="signIn" type="button">Sign in</button>
+            <button class="ghost-button" id="signUp" type="button">Create account</button>
+            <button class="danger-button" id="signOut" type="button" hidden>Sign out</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="summary-grid" aria-label="Money summary">
+        <article class="metric primary-metric">
+          <span class="metric-label">Balance</span>
+          <strong id="balanceTotal">₹0</strong>
+          <span id="monthDelta" class="metric-note">0 transactions this month</span>
+        </article>
+        <article class="metric">
+          <span class="metric-label">Income</span>
+          <strong id="incomeTotal">₹0</strong>
+          <span class="metric-note">This month</span>
+        </article>
+        <article class="metric">
+          <span class="metric-label">Expenses</span>
+          <strong id="expenseTotal">₹0</strong>
+          <span class="metric-note">This month</span>
+        </article>
+        <article class="metric">
+          <span class="metric-label">Saved</span>
+          <strong id="savingRate">0%</strong>
+          <span id="savingNote" class="metric-note">Income kept</span>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <form class="income-form" id="transactionForm" autocomplete="off">
+          <div class="section-heading">
+            <h2>Add money</h2>
+            <button class="icon-button" id="clearForm" type="button" aria-label="Clear form" title="Clear form">x</button>
+          </div>
+
+          <fieldset class="kind-toggle" aria-label="Transaction type">
+            <label>
+              <input type="radio" name="kind" value="income" checked />
+              <span>Income</span>
+            </label>
+            <label>
+              <input type="radio" name="kind" value="expense" />
+              <span>Expense</span>
+            </label>
+          </fieldset>
+
+          <label>
+            <span>Amount</span>
+            <input id="amount" name="amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="2500" required />
+          </label>
+
+          <label>
+            <span id="sourceLabel">Source</span>
+            <input id="source" name="source" type="text" placeholder="Salary, client, rent" required />
+          </label>
+
+          <div class="form-row">
+            <label>
+              <span>Date</span>
+              <input id="date" name="date" type="date" required />
+            </label>
+            <label>
+              <span>Category</span>
+              <select id="category" name="category">
+                <option>Salary</option>
+                <option>Freelance</option>
+                <option>Business</option>
+                <option>Investment</option>
+                <option>Food</option>
+                <option>Transport</option>
+                <option>Rent</option>
+                <option>Shopping</option>
+                <option>Bills</option>
+                <option>Health</option>
+                <option>Gift</option>
+                <option>Other</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            <span>Note</span>
+            <input id="note" name="note" type="text" placeholder="Optional" />
+          </label>
+
+          <button class="primary-button" id="submitButton" type="submit"><span aria-hidden="true">+</span> Add income</button>
+        </form>
+
+        <section class="goal-panel">
+          <div class="section-heading">
+            <h2>Savings goal</h2>
+            <span id="goalPercent" class="pill">0%</span>
+          </div>
+          <label>
+            <span>Monthly target</span>
+            <input id="goalAmount" type="number" inputmode="decimal" min="0" step="1000" placeholder="100000" />
+          </label>
+          <div class="goal-visual" aria-hidden="true">
+            <div class="goal-ring">
+              <span id="goalRingText">0%</span>
+            </div>
+          </div>
+          <div class="progress-track" aria-label="Monthly goal progress">
+            <div id="goalBar" class="progress-fill"></div>
+          </div>
+          <p id="goalStatus" class="panel-note">Set a monthly savings target.</p>
+        </section>
+
+        <section class="chart-panel">
+          <div class="section-heading">
+            <h2>Spending</h2>
+            <span id="sourceCount" class="pill">0</span>
+          </div>
+          <div id="sourceChart" class="source-chart" aria-live="polite"></div>
+        </section>
+
+        <section class="list-panel">
+          <div class="section-heading">
+            <h2>Recent money</h2>
+            <button class="danger-button" id="resetData" type="button">Reset</button>
+          </div>
+          <div id="incomeList" class="income-list" aria-live="polite"></div>
+        </section>
+      </section>
+    </main>
+
+    <template id="incomeItemTemplate">
+      <article class="income-item">
+        <div>
+          <strong class="item-source"></strong>
+          <span class="item-meta"></span>
+          <p class="item-note"></p>
+        </div>
+        <div class="item-side">
+          <strong class="item-amount"></strong>
+          <button class="icon-button delete-income" type="button" aria-label="Delete transaction" title="Delete transaction">x</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="./config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
