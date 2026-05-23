@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Money Desk</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%230f766e'/%3E%3Cpath d='M19 42h26v6H19zM20 17h24v6H20zM20 29h18v6H20z' fill='%23fffdf7'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=20260523-entry" />
+    <link rel="stylesheet" href="./styles.css?v=20260523-assets" />
   </head>
   <body>
     <main class="shell">
@@ -25,6 +25,10 @@
               <input type="radio" name="kind" value="expense" />
               <span>Expense</span>
             </label>
+            <label>
+              <input type="radio" name="kind" value="asset" />
+              <span>Asset</span>
+            </label>
           </fieldset>
 
           <label>
@@ -43,21 +47,8 @@
               <input id="date" name="date" type="date" required />
             </label>
             <label>
-              <span>Category</span>
-              <select id="category" name="category">
-                <option>Salary</option>
-                <option>Freelance</option>
-                <option>Business</option>
-                <option>Investment</option>
-                <option>Food</option>
-                <option>Transport</option>
-                <option>Rent</option>
-                <option>Shopping</option>
-                <option>Bills</option>
-                <option>Health</option>
-                <option>Gift</option>
-                <option>Other</option>
-              </select>
+              <span id="categoryLabel">Category</span>
+              <select id="category" name="category"></select>
             </label>
           </div>
 
@@ -113,6 +104,11 @@
               <strong id="savingRate">0%</strong>
               <span id="savingNote" class="metric-note">Income kept</span>
             </article>
+            <article class="metric asset-metric">
+              <span class="metric-label">Assets</span>
+              <strong id="assetTotal">₹0</strong>
+              <span id="assetNote" class="metric-note">Cash + Gold</span>
+            </article>
           </section>
         </div>
       </section>
@@ -157,6 +153,14 @@
           <div id="sourceChart" class="source-chart" aria-live="polite"></div>
         </section>
 
+        <section class="asset-panel">
+          <div class="section-heading">
+            <h2>Assets</h2>
+            <span id="assetCount" class="pill">0</span>
+          </div>
+          <div id="assetChart" class="source-chart" aria-live="polite"></div>
+        </section>
+
         <section class="list-panel">
           <div class="section-heading">
             <h2>Recent money</h2>
@@ -182,6 +186,6 @@
     </template>
 
     <script src="./config.js"></script>
-    <script src="./app.js?v=20260523-entry"></script>
+    <script src="./app.js?v=20260523-assets"></script>
   </body>
 </html>

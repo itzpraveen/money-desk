@@ -12,6 +12,12 @@ let currentUser = null;
 let syncTimer = null;
 let isLoadingCloud = false;
 
+const categoriesByKind = {
+  income: ["Salary", "Freelance", "Business", "Interest", "Other"],
+  expense: ["Food", "Transport", "Rent", "Shopping", "Bills", "Health", "Gift", "Other"],
+  asset: ["Cash", "Gold"],
+};
+
 const els = {
   exportCsv: document.querySelector("#exportCsv"),
   syncNow: document.querySelector("#syncNow"),
@@ -28,6 +34,8 @@ const els = {
   expenseTotal: document.querySelector("#expenseTotal"),
   savingRate: document.querySelector("#savingRate"),
   savingNote: document.querySelector("#savingNote"),
+  assetTotal: document.querySelector("#assetTotal"),
+  assetNote: document.querySelector("#assetNote"),
   form: document.querySelector("#transactionForm"),
   clearForm: document.querySelector("#clearForm"),
   kindInputs: document.querySelectorAll('input[name="kind"]'),
@@ -35,6 +43,7 @@ const els = {
   source: document.querySelector("#source"),
   sourceLabel: document.querySelector("#sourceLabel"),
   date: document.querySelector("#date"),
+  categoryLabel: document.querySelector("#categoryLabel"),
   category: document.querySelector("#category"),
   note: document.querySelector("#note"),
   submitButton: document.querySelector("#submitButton"),
@@ -45,6 +54,8 @@ const els = {
   goalStatus: document.querySelector("#goalStatus"),
   sourceCount: document.querySelector("#sourceCount"),
   sourceChart: document.querySelector("#sourceChart"),
+  assetCount: document.querySelector("#assetCount"),
+  assetChart: document.querySelector("#assetChart"),
   incomeList: document.querySelector("#incomeList"),
   resetData: document.querySelector("#resetData"),
   template: document.querySelector("#incomeItemTemplate"),
@@ -88,10 +99,14 @@ function save() {
 }
 
 function normalizeEntry(entry) {
-  const category = entry.category || entry.type || "Other";
+  const kind = ["income", "expense", "asset"].includes(entry.kind) ? entry.kind : "income";
+  const category = entry.category || entry.investmentType || entry.type || (kind === "asset" ? "Cash" : "Other");
+
   return {
     id: entry.id || crypto.randomUUID(),
-    kind: entry.kind === "expense" ? "expense" : "income",
+    kind,
+    assetClass: kind === "asset" ? entry.assetClass || "investment" : "",
+    investmentType: kind === "asset" ? entry.investmentType || category : "",
     amount: Number(entry.amount) || 0,
     source: entry.source || "Unknown",
     date: entry.date || getToday(),
@@ -143,8 +158,11 @@ function renderSummary() {
   const monthEntries = getCurrentMonthEntries();
   const income = sum(entriesByKind(monthEntries, "income"));
   const expenses = sum(entriesByKind(monthEntries, "expense"));
+  const assets = sum(entriesByKind(state.entries, "asset"));
   const balance = income - expenses;
   const savingsPercent = income ? Math.round((balance / income) * 100) : 0;
+  const assetEntries = entriesByKind(state.entries, "asset");
+  const assetTypes = Object.keys(groupByCategory(assetEntries));
 
   els.balanceTotal.textContent = formatMoney(balance);
   els.monthDelta.textContent = `${monthEntries.length} ${monthEntries.length === 1 ? "transaction" : "transactions"} this month`;
@@ -152,6 +170,8 @@ function renderSummary() {
   els.expenseTotal.textContent = formatMoney(expenses);
   els.savingRate.textContent = `${Math.max(0, savingsPercent)}%`;
   els.savingNote.textContent = balance >= 0 ? "Income kept" : "Overspent";
+  els.assetTotal.textContent = formatMoney(assets);
+  els.assetNote.textContent = assetTypes.length ? `Invested in ${assetTypes.join(" + ")}` : "Cash + Gold investments";
 }
 
 function renderGoal() {
@@ -210,6 +230,36 @@ function renderSources() {
   });
 }
 
+function renderAssets() {
+  const assetEntries = entriesByKind(state.entries, "asset");
+  const grouped = Object.entries(groupByCategory(assetEntries)).sort((a, b) => b[1] - a[1]);
+  const max = grouped[0]?.[1] || 0;
+
+  els.assetCount.textContent = String(grouped.length);
+  els.assetChart.innerHTML = "";
+
+  if (!grouped.length) {
+    els.assetChart.innerHTML = '<div class="empty-state">No assets yet. Add Cash or Gold.</div>';
+    return;
+  }
+
+  grouped.forEach(([category, amount]) => {
+    const row = document.createElement("article");
+    row.className = "source-row asset-row";
+    row.innerHTML = `
+      <header>
+        <span></span>
+        <strong></strong>
+      </header>
+      <div class="source-track"><div class="source-fill"></div></div>
+    `;
+    row.querySelector("span").textContent = category;
+    row.querySelector("strong").textContent = formatMoney(amount);
+    row.querySelector(".source-fill").style.width = `${Math.max(4, (amount / max) * 100)}%`;
+    els.assetChart.append(row);
+  });
+}
+
 function renderList() {
   const sorted = [...state.entries].sort((a, b) => b.date.localeCompare(a.date));
   els.incomeList.innerHTML = "";
@@ -222,8 +272,9 @@ function renderList() {
   sorted.forEach((entry) => {
     const item = els.template.content.firstElementChild.cloneNode(true);
     item.classList.toggle("expense-item", entry.kind === "expense");
+    item.classList.toggle("asset-item", entry.kind === "asset");
     item.querySelector(".item-source").textContent = entry.source;
-    item.querySelector(".item-meta").textContent = `${formatDate(entry.date)} · ${entry.category} · ${entry.kind}`;
+    item.querySelector(".item-meta").textContent = `${formatDate(entry.date)} · ${entry.kind} · ${entry.category}`;
     item.querySelector(".item-note").textContent = entry.note || "";
     item.querySelector(".item-amount").textContent = `${entry.kind === "expense" ? "-" : "+"}${formatMoney(entry.amount)}`;
     item.querySelector(".delete-income").dataset.id = entry.id;
@@ -231,21 +282,38 @@ function renderList() {
   });
 }
 
+function setCategoryOptions(kind) {
+  const options = categoriesByKind[kind] || categoriesByKind.income;
+  els.category.replaceChildren(
+    ...options.map((category) => {
+      const option = document.createElement("option");
+      option.value = category;
+      option.textContent = category;
+      return option;
+    }),
+  );
+}
+
 function renderFormMode() {
   const kind = currentKind();
   const isExpense = kind === "expense";
+  const isAsset = kind === "asset";
 
-  els.sourceLabel.textContent = isExpense ? "Spent at" : "Source";
-  els.source.placeholder = isExpense ? "Rent, groceries, petrol" : "Salary, client, rent";
-  els.category.value = isExpense ? "Food" : "Salary";
+  setCategoryOptions(kind);
+  els.sourceLabel.textContent = isAsset ? "Asset name" : isExpense ? "Spent at" : "Source";
+  els.categoryLabel.textContent = isAsset ? "Investment type" : "Category";
+  els.source.placeholder = isAsset ? "Bank FD, jewellery, locker gold" : isExpense ? "Rent, groceries, petrol" : "Salary, client, rent";
+  els.category.value = isAsset ? "Cash" : isExpense ? "Food" : "Salary";
   els.submitButton.classList.toggle("expense-button", isExpense);
-  els.submitButton.lastChild.textContent = isExpense ? " Add expense" : " Add income";
+  els.submitButton.classList.toggle("asset-button", isAsset);
+  els.submitButton.lastChild.textContent = isAsset ? " Add asset" : isExpense ? " Add expense" : " Add income";
 }
 
 function render() {
   renderSummary();
   renderGoal();
   renderSources();
+  renderAssets();
   renderList();
 }
 
@@ -281,6 +349,8 @@ function updateAuthUi() {
 function toCloudEntry(entry) {
   return {
     kind: entry.kind,
+    assetClass: entry.kind === "asset" ? "investment" : "",
+    investmentType: entry.kind === "asset" ? entry.investmentType || entry.category : "",
     amount: Number(entry.amount) || 0,
     source: entry.source,
     category: entry.category,
@@ -294,6 +364,8 @@ function fromCloudEntry(documentSnapshot) {
   return normalizeEntry({
     id: documentSnapshot.id,
     kind: data.kind,
+    assetClass: data.assetClass,
+    investmentType: data.investmentType,
     amount: data.amount,
     source: data.source,
     date: data.date,
@@ -474,6 +546,8 @@ function addTransaction(event) {
   state.entries.push({
     id: crypto.randomUUID(),
     kind: currentKind(),
+    assetClass: currentKind() === "asset" ? "investment" : "",
+    investmentType: currentKind() === "asset" ? els.category.value : "",
     amount,
     source: els.source.value.trim(),
     date: els.date.value,
@@ -494,8 +568,17 @@ function deleteTransaction(id) {
 
 function exportCsv() {
   const rows = [
-    ["Date", "Kind", "Name", "Category", "Amount", "Note"],
-    ...state.entries.map((entry) => [entry.date, entry.kind, entry.source, entry.category, entry.amount, entry.note]),
+    ["Date", "Kind", "Asset Class", "Investment Type", "Name", "Category", "Amount", "Note"],
+    ...state.entries.map((entry) => [
+      entry.date,
+      entry.kind,
+      entry.assetClass || "",
+      entry.investmentType || "",
+      entry.source,
+      entry.category,
+      entry.amount,
+      entry.note,
+    ]),
   ];
   const csv = rows
     .map((row) => row.map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(","))

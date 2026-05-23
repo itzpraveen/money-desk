@@ -1,6 +1,6 @@
 # Money Desk
 
-A simple India-first personal money tracker for monthly income, expenses, balance, savings progress, CSV export, and optional Firebase cloud sync.
+A simple India-first personal money tracker for monthly income, expenses, assets, balance, savings progress, CSV export, and optional Firebase cloud sync.
 
 Live site:
 
@@ -48,6 +48,13 @@ https://itzpraveen.github.io/money-desk/
 Without Firebase settings, Money Desk stores transactions in the browser using `localStorage`.
 
 With Firebase settings, users can sign in and sync data across devices with Firebase Authentication and Cloud Firestore.
+
+## Assets
+
+Money Desk includes an Asset mode alongside Income and Expense. Assets are treated as investments and currently support:
+
+- Cash
+- Gold
 
 ## Firebase setup
 
