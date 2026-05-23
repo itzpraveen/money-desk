@@ -48,6 +48,7 @@ const els = {
   category: document.querySelector("#category"),
   note: document.querySelector("#note"),
   submitButton: document.querySelector("#submitButton"),
+  formFeedback: document.querySelector("#formFeedback"),
   goalAmount: document.querySelector("#goalAmount"),
   goalPercent: document.querySelector("#goalPercent"),
   goalRingText: document.querySelector("#goalRingText"),
@@ -65,9 +66,13 @@ const els = {
   deleteSummary: document.querySelector("#deleteSummary"),
   cancelDelete: document.querySelector("#cancelDelete"),
   confirmDelete: document.querySelector("#confirmDelete"),
+  toast: document.querySelector("#toast"),
 };
 
 let pendingDeleteId = null;
+let lastAddedId = null;
+let feedbackTimer = null;
+let toastTimer = null;
 
 function getToday() {
   const now = new Date();
@@ -95,6 +100,18 @@ function formatDate(dateString) {
     month: "short",
     year: "numeric",
   }).format(new Date(`${dateString}T00:00:00`));
+}
+
+function labelForKind(kind) {
+  if (kind === "asset") {
+    return "asset";
+  }
+
+  if (kind === "expense") {
+    return "expense";
+  }
+
+  return "income";
 }
 
 function currentKind() {
@@ -180,6 +197,14 @@ function renderSummary() {
   els.savingNote.textContent = balance >= 0 ? "Income kept" : "Overspent";
   els.assetTotal.textContent = formatMoney(assets);
   els.assetNote.textContent = assetTypes.length ? `Invested in ${assetTypes.join(" + ")}` : "Cash + Gold investments";
+}
+
+function pulseMetrics() {
+  [els.balanceTotal, els.incomeTotal, els.expenseTotal, els.assetTotal].forEach((metric) => {
+    metric.closest(".metric")?.classList.remove("metric-updated");
+    void metric.offsetWidth;
+    metric.closest(".metric")?.classList.add("metric-updated");
+  });
 }
 
 function renderGoal() {
@@ -286,6 +311,7 @@ function renderList() {
     const item = els.template.content.firstElementChild.cloneNode(true);
     item.classList.toggle("expense-item", entry.kind === "expense");
     item.classList.toggle("asset-item", entry.kind === "asset");
+    item.classList.toggle("just-added", entry.id === lastAddedId);
     item.querySelector(".item-source").textContent = entry.source;
     item.querySelector(".item-meta").textContent = `${formatDate(entry.date)} · ${entry.kind} · ${entry.category}`;
     item.querySelector(".item-note").textContent = entry.note || "";
@@ -335,6 +361,34 @@ function renderFilterButtons() {
   els.filterButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.filter === state.historyFilter);
   });
+}
+
+function showFeedback(message) {
+  clearTimeout(feedbackTimer);
+  clearTimeout(toastTimer);
+
+  els.formFeedback.textContent = message;
+  els.formFeedback.classList.add("show");
+  els.toast.textContent = message;
+  els.toast.classList.add("show");
+
+  feedbackTimer = setTimeout(() => {
+    els.formFeedback.classList.remove("show");
+  }, 3200);
+
+  toastTimer = setTimeout(() => {
+    els.toast.classList.remove("show");
+  }, 3200);
+}
+
+function flashSubmitButton(message) {
+  els.submitButton.classList.add("added-state");
+  els.submitButton.lastChild.textContent = ` ${message}`;
+
+  setTimeout(() => {
+    els.submitButton.classList.remove("added-state");
+    renderFormMode();
+  }, 1100);
 }
 
 function hasFirebaseConfig() {
@@ -547,11 +601,25 @@ async function signOut() {
   updateAuthUi();
 }
 
-function resetForm() {
+function resetForm(options = {}) {
+  const { focusAmount = true, preserveKind = "" } = options;
   els.form.reset();
+
+  if (preserveKind) {
+    const kindInput = document.querySelector(`input[name="kind"][value="${preserveKind}"]`);
+    if (kindInput) {
+      kindInput.checked = true;
+    }
+  }
+
   els.date.value = getToday();
   renderFormMode();
-  els.amount.focus();
+
+  if (focusAmount) {
+    els.amount.focus();
+  } else {
+    els.submitButton.blur();
+  }
 }
 
 function addTransaction(event) {
@@ -563,21 +631,34 @@ function addTransaction(event) {
     return;
   }
 
-  state.entries.push({
+  const kind = currentKind();
+  const entry = {
     id: crypto.randomUUID(),
-    kind: currentKind(),
-    assetClass: currentKind() === "asset" ? "investment" : "",
-    investmentType: currentKind() === "asset" ? els.category.value : "",
+    kind,
+    assetClass: kind === "asset" ? "investment" : "",
+    investmentType: kind === "asset" ? els.category.value : "",
     amount,
     source: els.source.value.trim(),
     date: els.date.value,
     category: els.category.value,
     note: els.note.value.trim(),
-  });
+  };
+  state.entries.push(entry);
+  lastAddedId = entry.id;
 
   save();
-  resetForm();
+  resetForm({ focusAmount: false, preserveKind: kind });
   render();
+  pulseMetrics();
+  flashSubmitButton("Added");
+  showFeedback(`${labelForKind(kind)[0].toUpperCase()}${labelForKind(kind).slice(1)} added: ${entry.source} - ${formatMoney(entry.amount)}`);
+
+  setTimeout(() => {
+    if (lastAddedId === entry.id) {
+      lastAddedId = null;
+      renderList();
+    }
+  }, 3600);
 }
 
 function requestDeleteTransaction(id) {
@@ -607,6 +688,7 @@ function confirmDeleteTransaction() {
   pendingDeleteId = null;
   save();
   render();
+  showFeedback("Entry removed.");
   closeDeleteDialog();
 }
 
