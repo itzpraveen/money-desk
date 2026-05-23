@@ -3,6 +3,7 @@ const STORAGE_KEY = "income-desk-data-v1";
 const state = {
   goal: 0,
   entries: [],
+  historyFilter: "all",
 };
 
 const FIREBASE_VERSION = "10.12.5";
@@ -57,9 +58,16 @@ const els = {
   assetCount: document.querySelector("#assetCount"),
   assetChart: document.querySelector("#assetChart"),
   incomeList: document.querySelector("#incomeList"),
+  filterButtons: document.querySelectorAll(".filter-button"),
   resetData: document.querySelector("#resetData"),
   template: document.querySelector("#incomeItemTemplate"),
+  deleteDialog: document.querySelector("#deleteDialog"),
+  deleteSummary: document.querySelector("#deleteSummary"),
+  cancelDelete: document.querySelector("#cancelDelete"),
+  confirmDelete: document.querySelector("#confirmDelete"),
 };
+
+let pendingDeleteId = null;
 
 function getToday() {
   const now = new Date();
@@ -261,11 +269,16 @@ function renderAssets() {
 }
 
 function renderList() {
-  const sorted = [...state.entries].sort((a, b) => b.date.localeCompare(a.date));
+  const visibleEntries =
+    state.historyFilter === "all" ? state.entries : state.entries.filter((entry) => entry.kind === state.historyFilter);
+  const sorted = [...visibleEntries].sort((a, b) => b.date.localeCompare(a.date));
   els.incomeList.innerHTML = "";
 
   if (!sorted.length) {
-    els.incomeList.innerHTML = '<div class="empty-state">No transactions added.</div>';
+    els.incomeList.innerHTML =
+      state.historyFilter === "all"
+        ? '<div class="empty-state">No transactions added.</div>'
+        : `<div class="empty-state">No ${state.historyFilter} entries yet.</div>`;
     return;
   }
 
@@ -314,7 +327,14 @@ function render() {
   renderGoal();
   renderSources();
   renderAssets();
+  renderFilterButtons();
   renderList();
+}
+
+function renderFilterButtons() {
+  els.filterButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.filter === state.historyFilter);
+  });
 }
 
 function hasFirebaseConfig() {
@@ -560,7 +580,7 @@ function addTransaction(event) {
   render();
 }
 
-function deleteTransaction(id) {
+function requestDeleteTransaction(id) {
   const entry = state.entries.find((item) => item.id === id);
 
   if (!entry) {
@@ -568,15 +588,34 @@ function deleteTransaction(id) {
   }
 
   const label = entry.kind === "asset" ? "asset" : entry.kind === "expense" ? "expense" : "income";
-  const confirmed = confirm(`Remove this ${label}?\n\n${entry.source} - ${formatMoney(entry.amount)}`);
+  pendingDeleteId = id;
+  els.deleteSummary.textContent = `${entry.source} - ${formatMoney(entry.amount)} will be removed from ${label}.`;
 
-  if (!confirmed) {
+  if (typeof els.deleteDialog.showModal === "function") {
+    els.deleteDialog.showModal();
+  } else if (confirm(`Remove this ${label}?\n\n${entry.source} - ${formatMoney(entry.amount)}`)) {
+    confirmDeleteTransaction();
+  }
+}
+
+function confirmDeleteTransaction() {
+  if (!pendingDeleteId) {
     return;
   }
 
-  state.entries = state.entries.filter((entry) => entry.id !== id);
+  state.entries = state.entries.filter((entry) => entry.id !== pendingDeleteId);
+  pendingDeleteId = null;
   save();
   render();
+  closeDeleteDialog();
+}
+
+function closeDeleteDialog() {
+  pendingDeleteId = null;
+
+  if (els.deleteDialog.open) {
+    els.deleteDialog.close();
+  }
 }
 
 function exportCsv() {
@@ -658,8 +697,25 @@ els.goalAmount.addEventListener("input", (event) => {
 els.incomeList.addEventListener("click", (event) => {
   const button = event.target.closest(".delete-income");
   if (button) {
-    deleteTransaction(button.dataset.id);
+    requestDeleteTransaction(button.dataset.id);
   }
+});
+els.filterButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    state.historyFilter = button.dataset.filter;
+    renderList();
+    renderFilterButtons();
+  });
+});
+els.cancelDelete.addEventListener("click", closeDeleteDialog);
+els.confirmDelete.addEventListener("click", confirmDeleteTransaction);
+els.deleteDialog.addEventListener("click", (event) => {
+  if (event.target === els.deleteDialog) {
+    closeDeleteDialog();
+  }
+});
+els.deleteDialog.addEventListener("close", () => {
+  pendingDeleteId = null;
 });
 els.resetData.addEventListener("click", () => {
   if (state.entries.length && confirm("Delete all transactions?")) {

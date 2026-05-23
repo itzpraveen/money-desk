@@ -19,6 +19,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -85,6 +89,40 @@ h2 {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.quick-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 8px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: var(--radius);
+  background: rgba(255, 253, 247, 0.92);
+  box-shadow: 0 10px 30px rgba(31, 24, 11, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.quick-nav a {
+  display: grid;
+  min-height: 46px;
+  place-items: center;
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 0.96rem;
+  font-weight: 950;
+  text-decoration: none;
+}
+
+.quick-nav a:hover,
+.quick-nav a:focus-visible {
+  background: #101411;
+  color: #fffdf7;
+  outline: none;
 }
 
 label span {
@@ -165,11 +203,11 @@ input:focus {
 }
 
 .metric,
-.auth-panel,
 .income-form,
 .goal-panel,
 .chart-panel,
 .asset-panel,
+.settings-panel,
 .list-panel {
   border: 1px solid rgba(17, 17, 17, 0.08);
   border-radius: var(--radius);
@@ -177,13 +215,15 @@ input:focus {
   box-shadow: var(--shadow);
 }
 
-.auth-panel {
+.settings-panel {
   display: grid;
-  grid-template-columns: 0.9fr 1.6fr;
   gap: 16px;
-  align-items: end;
-  margin-bottom: 14px;
   padding: 18px 20px;
+}
+
+.settings-panel .auth-form,
+.settings-panel .auth-actions {
+  grid-template-columns: 1fr;
 }
 
 .auth-form {
@@ -256,6 +296,8 @@ input:focus {
 .income-form,
 .goal-panel,
 .chart-panel,
+.asset-panel,
+.settings-panel,
 .list-panel {
   padding: 20px;
 }
@@ -441,6 +483,28 @@ input:disabled {
   background: rgba(180, 35, 24, 0.1);
   color: var(--danger);
   padding: 0 14px;
+}
+
+.filter-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.filter-button {
+  min-height: 44px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-strong);
+  color: var(--muted);
+  font-weight: 950;
+}
+
+.filter-button.active {
+  border-color: #101411;
+  background: #101411;
+  color: #fffdf7;
 }
 
 .icon-button {
@@ -637,17 +701,55 @@ input:disabled {
   text-align: center;
 }
 
+.confirm-dialog {
+  width: min(420px, calc(100% - 32px));
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  padding: 0;
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(17, 17, 17, 0.44);
+  backdrop-filter: blur(4px);
+}
+
+.confirm-card {
+  display: grid;
+  gap: 18px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.confirm-card h2 {
+  font-size: 2rem;
+}
+
+.confirm-card p {
+  color: var(--muted);
+  font-size: 1.1rem;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 @media (max-width: 1020px) {
   .summary-grid,
   .entry-hero,
-  .auth-panel,
   .auth-form,
   .workspace {
     grid-template-columns: 1fr 1fr;
   }
 
   .primary-metric,
-  .auth-panel > div,
   .auth-form,
   .list-panel {
     grid-column: 1 / -1;
@@ -669,7 +771,6 @@ input:disabled {
   .summary-grid,
   .entry-hero,
   .entry-side .summary-grid,
-  .auth-panel,
   .auth-form,
   .workspace,
   .form-row {
@@ -681,6 +782,21 @@ input:disabled {
   .auth-actions {
     display: grid;
     justify-items: stretch;
+  }
+
+  .quick-nav {
+    grid-template-columns: repeat(5, minmax(58px, 1fr));
+    overflow-x: auto;
+  }
+
+  .quick-nav a {
+    min-height: 42px;
+    font-size: 0.86rem;
+  }
+
+  .filter-tabs,
+  .dialog-actions {
+    grid-template-columns: 1fr 1fr;
   }
 
   .entry-hero .kind-toggle {
