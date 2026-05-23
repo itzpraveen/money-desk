@@ -2,6 +2,12 @@
 
 A simple India-first personal money tracker for monthly income, expenses, balance, savings progress, CSV export, and optional Firebase cloud sync.
 
+Live site:
+
+```text
+https://itzpraveen.github.io/money-desk/
+```
+
 ## Run locally
 
 Open `index.html` in a browser, or serve the folder:
@@ -31,10 +37,10 @@ http://localhost:5173
 6. Select branch `main` and folder `/root`.
 7. Save.
 
-The site will publish to a URL like:
+This project is published at:
 
 ```text
-https://your-username.github.io/your-repo-name/
+https://itzpraveen.github.io/money-desk/
 ```
 
 ## Data note
