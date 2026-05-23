@@ -9,74 +9,7 @@
   </head>
   <body>
     <main class="shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Personal money</p>
-          <h1>Money Desk</h1>
-        </div>
-        <div class="top-actions" aria-label="App controls">
-          <label class="currency-control">
-            <span>Currency</span>
-            <select id="currency">
-              <option value="INR">INR</option>
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
-              <option value="CAD">CAD</option>
-              <option value="AUD">AUD</option>
-            </select>
-          </label>
-          <button class="ghost-button" id="syncNow" type="button">Sync</button>
-          <button class="ghost-button" id="exportCsv" type="button">Export CSV</button>
-        </div>
-      </header>
-
-      <section class="auth-panel" aria-label="Cloud sync">
-        <div>
-          <h2>Cloud sync</h2>
-          <p id="syncStatus" class="panel-note">Local mode. Add Firebase settings to enable login and sync.</p>
-        </div>
-        <form class="auth-form" id="authForm" autocomplete="on">
-          <label>
-            <span>Email</span>
-            <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" />
-          </label>
-          <label>
-            <span>Password</span>
-            <input id="password" name="password" type="password" placeholder="Minimum 6 characters" autocomplete="current-password" />
-          </label>
-          <div class="auth-actions">
-            <button class="primary-button small-button" id="signIn" type="button">Sign in</button>
-            <button class="ghost-button" id="signUp" type="button">Create account</button>
-            <button class="danger-button" id="signOut" type="button" hidden>Sign out</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="summary-grid" aria-label="Money summary">
-        <article class="metric primary-metric">
-          <span class="metric-label">Balance</span>
-          <strong id="balanceTotal">₹0</strong>
-          <span id="monthDelta" class="metric-note">0 transactions this month</span>
-        </article>
-        <article class="metric">
-          <span class="metric-label">Income</span>
-          <strong id="incomeTotal">₹0</strong>
-          <span class="metric-note">This month</span>
-        </article>
-        <article class="metric">
-          <span class="metric-label">Expenses</span>
-          <strong id="expenseTotal">₹0</strong>
-          <span class="metric-note">This month</span>
-        </article>
-        <article class="metric">
-          <span class="metric-label">Saved</span>
-          <strong id="savingRate">0%</strong>
-          <span id="savingNote" class="metric-note">Income kept</span>
-        </article>
-      </section>
-
-      <section class="workspace">
+      <section class="entry-hero">
         <form class="income-form" id="transactionForm" autocomplete="off">
           <div class="section-heading">
             <h2>Add money</h2>
@@ -136,6 +69,66 @@
           <button class="primary-button" id="submitButton" type="submit"><span aria-hidden="true">+</span> Add income</button>
         </form>
 
+        <div class="entry-side">
+          <section class="auth-panel" aria-label="Cloud sync">
+            <div>
+              <h2>Cloud sync</h2>
+              <p id="syncStatus" class="panel-note">Local mode. Add Firebase settings to enable login and sync.</p>
+            </div>
+            <form class="auth-form" id="authForm" autocomplete="on">
+              <label>
+                <span>Email</span>
+                <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" />
+              </label>
+              <label>
+                <span>Password</span>
+                <input id="password" name="password" type="password" placeholder="Minimum 6 characters" autocomplete="current-password" />
+              </label>
+              <div class="auth-actions">
+                <button class="primary-button small-button" id="signIn" type="button">Sign in</button>
+                <button class="ghost-button" id="signUp" type="button">Create account</button>
+                <button class="danger-button" id="signOut" type="button" hidden>Sign out</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="summary-grid" aria-label="Money summary">
+            <article class="metric primary-metric">
+              <span class="metric-label">Balance</span>
+              <strong id="balanceTotal">₹0</strong>
+              <span id="monthDelta" class="metric-note">0 transactions this month</span>
+            </article>
+            <article class="metric">
+              <span class="metric-label">Income</span>
+              <strong id="incomeTotal">₹0</strong>
+              <span class="metric-note">This month</span>
+            </article>
+            <article class="metric">
+              <span class="metric-label">Expenses</span>
+              <strong id="expenseTotal">₹0</strong>
+              <span class="metric-note">This month</span>
+            </article>
+            <article class="metric">
+              <span class="metric-label">Saved</span>
+              <strong id="savingRate">0%</strong>
+              <span id="savingNote" class="metric-note">Income kept</span>
+            </article>
+          </section>
+        </div>
+      </section>
+
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Personal money</p>
+          <h1>Money Desk</h1>
+        </div>
+        <div class="top-actions" aria-label="App controls">
+          <button class="ghost-button" id="syncNow" type="button">Sync</button>
+          <button class="ghost-button" id="exportCsv" type="button">Export CSV</button>
+        </div>
+      </header>
+
+      <section class="workspace">
         <section class="goal-panel">
           <div class="section-heading">
             <h2>Savings goal</h2>

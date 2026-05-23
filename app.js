@@ -1,7 +1,6 @@
 const STORAGE_KEY = "income-desk-data-v1";
 
 const state = {
-  currency: "INR",
   goal: 0,
   entries: [],
 };
@@ -13,26 +12,7 @@ let currentUser = null;
 let syncTimer = null;
 let isLoadingCloud = false;
 
-const currencySymbols = {
-  INR: "₹",
-  USD: "$",
-  EUR: "€",
-  GBP: "£",
-  CAD: "C$",
-  AUD: "A$",
-};
-
-const currencyLocales = {
-  INR: "en-IN",
-  USD: "en-US",
-  EUR: "de-DE",
-  GBP: "en-GB",
-  CAD: "en-CA",
-  AUD: "en-AU",
-};
-
 const els = {
-  currency: document.querySelector("#currency"),
   exportCsv: document.querySelector("#exportCsv"),
   syncNow: document.querySelector("#syncNow"),
   syncStatus: document.querySelector("#syncStatus"),
@@ -71,7 +51,11 @@ const els = {
 };
 
 function getToday() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function getMonthKey(dateString) {
@@ -79,10 +63,8 @@ function getMonthKey(dateString) {
 }
 
 function formatMoney(value) {
-  const symbol = currencySymbols[state.currency] || "";
-  const locale = currencyLocales[state.currency] || "en-IN";
   const rounded = Math.round((Number(value) || 0) * 100) / 100;
-  return `${symbol}${rounded.toLocaleString(locale, {
+  return `₹${rounded.toLocaleString("en-IN", {
     minimumFractionDigits: rounded % 1 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   })}`;
@@ -124,7 +106,6 @@ function load() {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      state.currency = parsed.currency || state.currency;
       state.goal = Number(parsed.goal) || 0;
       state.entries = Array.isArray(parsed.entries) ? parsed.entries.map(normalizeEntry) : [];
       return;
@@ -262,7 +243,6 @@ function renderFormMode() {
 }
 
 function render() {
-  els.currency.value = state.currency;
   renderSummary();
   renderGoal();
   renderSources();
@@ -347,7 +327,7 @@ async function syncToCloud() {
   await setDoc(
     doc(firebaseApi.db, "users", userId, "settings", "profile"),
     {
-      currency: state.currency,
+      currency: "INR",
       goal: Number(state.goal) || 0,
       updatedAt: serverTimestamp(),
     },
@@ -384,7 +364,6 @@ async function loadFromCloud() {
 
     if (settingsDoc.exists()) {
       const settings = settingsDoc.data();
-      state.currency = settings.currency || state.currency;
       state.goal = Number(settings.goal) || 0;
     }
 
@@ -446,9 +425,10 @@ async function signIn() {
   }
 
   try {
+    setSyncStatus("Signing in...");
     await firebaseApi.authModule.signInWithEmailAndPassword(firebaseApi.auth, els.email.value.trim(), els.password.value);
   } catch (error) {
-    setSyncStatus(error.message || "Sign in failed.");
+    setSyncStatus(getAuthErrorMessage(error, "Sign in failed."));
   }
 }
 
@@ -458,9 +438,10 @@ async function signUp() {
   }
 
   try {
+    setSyncStatus("Creating account...");
     await firebaseApi.authModule.createUserWithEmailAndPassword(firebaseApi.auth, els.email.value.trim(), els.password.value);
   } catch (error) {
-    setSyncStatus(error.message || "Account creation failed.");
+    setSyncStatus(getAuthErrorMessage(error, "Account creation failed."));
   }
 }
 
@@ -528,18 +509,51 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
+function getAuthErrorMessage(error, fallback) {
+  const code = error?.code || "";
+
+  if (code.includes("auth/invalid-email")) {
+    return "Enter a valid email address.";
+  }
+
+  if (code.includes("auth/missing-password")) {
+    return "Enter your password.";
+  }
+
+  if (code.includes("auth/weak-password")) {
+    return "Use at least 6 characters for the password.";
+  }
+
+  if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password") || code.includes("auth/user-not-found")) {
+    return "Email or password is incorrect.";
+  }
+
+  if (code.includes("auth/email-already-in-use")) {
+    return "This email already has an account. Use Sign in.";
+  }
+
+  if (code.includes("auth/unauthorized-domain")) {
+    return "This website domain is not allowed in Firebase Authentication yet.";
+  }
+
+  if (code.includes("auth/network-request-failed")) {
+    return "Network error. Check your connection and try again.";
+  }
+
+  return error?.message || fallback;
+}
+
 els.form.addEventListener("submit", addTransaction);
+els.authForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  signIn();
+});
 els.clearForm.addEventListener("click", resetForm);
 els.kindInputs.forEach((input) => input.addEventListener("change", renderFormMode));
 els.signIn.addEventListener("click", signIn);
 els.signUp.addEventListener("click", signUp);
 els.signOut.addEventListener("click", signOut);
 els.syncNow.addEventListener("click", syncToCloud);
-els.currency.addEventListener("change", (event) => {
-  state.currency = event.target.value;
-  save();
-  render();
-});
 els.goalAmount.addEventListener("input", (event) => {
   state.goal = Number(event.target.value) || 0;
   save();
